@@ -6,9 +6,7 @@
 //! UIToolbar
 
 use crate::frameworks::foundation::NSInteger;
-use crate::objc::{
-    id, impl_HostObject_with_superclass, msg, objc_classes, ClassExports, NSZonePtr,
-};
+use crate::objc::{id, impl_HostObject_with_superclass, objc_classes, ClassExports, NSZonePtr};
 
 pub struct UIToolbarHostObject {
     superclass: super::ui_view::UIViewHostObject,
@@ -29,19 +27,11 @@ pub const CLASSES: ClassExports = objc_classes! {
 }
 
 - (id)init {
-    msg![env; this initWithFrame: (
-        crate::frameworks::core_graphics::CGRect {
-            origin: crate::frameworks::core_graphics::CGPoint { x: 0.0, y: 0.0 },
-            size: crate::frameworks::core_graphics::CGSize {
-                width: 0.0,
-                height: 0.0,
-            },
-        }
-    )]
+    this
 }
 
-- (id)initWithFrame:(crate::frameworks::core_graphics::CGRect)frame {
-    msg![env; this UIView_initWithFrame: frame]
+- (id)initWithFrame:(crate::frameworks::core_graphics::CGRect)_frame {
+    this
 }
 
 - (())setItems:(id)_items {
