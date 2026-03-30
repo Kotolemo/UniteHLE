@@ -35,6 +35,16 @@ struct NSTimerHostObject {
 }
 impl HostObject for NSTimerHostObject {}
 
+/// Sanitize a time interval: clamp NaN/infinity/negative to a small positive
+/// value so that Duration::from_secs_f64 never panics.
+fn sanitize_interval(ns_interval: NSTimeInterval) -> NSTimeInterval {
+    if ns_interval.is_finite() && ns_interval > 0.0 {
+        ns_interval
+    } else {
+        0.0001
+    }
+}
+
 pub const CLASSES: ClassExports = objc_classes! {
 
 (env, this, _cmd);
@@ -47,7 +57,7 @@ pub const CLASSES: ClassExports = objc_classes! {
                    selector:(SEL)selector
                    userInfo:(id)user_info
                     repeats:(bool)repeats {
-    let ns_interval = ns_interval.max(0.0001);
+    let ns_interval = sanitize_interval(ns_interval);
     let rust_interval = Duration::from_secs_f64(ns_interval);
 
     retain(env, target);
@@ -161,6 +171,7 @@ pub const CLASSES: ClassExports = objc_classes! {
 
 /// For use by `CADisplayLink`
 pub fn set_time_interval(env: &mut Environment, timer: id, interval: NSTimeInterval) {
+    let interval = sanitize_interval(interval);
     let host_object = env.objc.borrow_mut::<NSTimerHostObject>(timer);
     host_object.ns_interval = interval;
     host_object.rust_interval = Duration::from_secs_f64(interval);
@@ -233,7 +244,12 @@ pub(super) fn handle_timer(env: &mut Environment, timer: id) -> Option<Instant> 
         assert!(advance_by == (advance_by as u32) as f64);
         let advance_by = advance_by as u32;
         if advance_by > 1 {
-            log_dbg!("Warning: Timer {:?} is lagging. It is overdue by {}s and has missed {} interval(s)!", timer, overdue_by.as_secs_f64(), advance_by - 1);
+            log_dbg!(
+                "Warning: Timer {:?} is lagging, overdue by {}s, missed {} interval(s)!",
+                timer,
+                overdue_by.as_secs_f64(),
+                advance_by - 1
+            );
         }
         let advance_by = rust_interval.checked_mul(advance_by).unwrap();
         Some(due_by.checked_add(advance_by).unwrap())
