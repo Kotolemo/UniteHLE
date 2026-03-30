@@ -6,11 +6,14 @@
 //! UIToolbar
 
 use crate::frameworks::foundation::NSInteger;
-use crate::objc::{id, ClassExports, HostObject};
-use crate::objc_classes;
+use crate::objc::{
+    id, impl_HostObject_with_superclass, msg, objc_classes, ClassExports, NSZonePtr,
+};
 
-struct UIToolbarHostObject;
-impl HostObject for UIToolbarHostObject {}
+pub struct UIToolbarHostObject {
+    superclass: super::ui_view::UIViewHostObject,
+}
+impl_HostObject_with_superclass!(UIToolbarHostObject);
 
 pub const CLASSES: ClassExports = objc_classes! {
 
@@ -18,17 +21,27 @@ pub const CLASSES: ClassExports = objc_classes! {
 
 @implementation UIToolbar: UIView
 
-+ (id)alloc {
-    let host_obj = Box::new(UIToolbarHostObject);
++ (id)allocWithZone:(NSZonePtr)_zone {
+    let host_obj = Box::new(UIToolbarHostObject {
+        superclass: Default::default(),
+    });
     env.objc.alloc_object(this, host_obj, &mut env.mem)
 }
 
 - (id)init {
-    this
+    msg![env; this initWithFrame: (
+        crate::frameworks::core_graphics::CGRect {
+            origin: crate::frameworks::core_graphics::CGPoint { x: 0.0, y: 0.0 },
+            size: crate::frameworks::core_graphics::CGSize {
+                width: 0.0,
+                height: 0.0,
+            },
+        }
+    )]
 }
 
-- (id)initWithFrame:(crate::frameworks::core_graphics::CGRect)_frame {
-    this
+- (id)initWithFrame:(crate::frameworks::core_graphics::CGRect)frame {
+    msg![env; this UIView_initWithFrame: frame]
 }
 
 - (())setItems:(id)_items {
@@ -68,4 +81,3 @@ pub const CLASSES: ClassExports = objc_classes! {
 @end
 
 };
-
